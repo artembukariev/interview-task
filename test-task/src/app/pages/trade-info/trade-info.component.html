@@ -1,67 +1,64 @@
 <div class="trade-wrapper">
-  <form (submit)="submitTrade()" [formGroup]="selectValue">
-    <div class="trade-info-wrapper">
-      <div class="trade-result-wrapper" *ngIf="shortTrade">
-        <div class="trade-result" *ngIf="shortTrade?.entryDate">
-          <div class="trade-result-title">Open trade date:</div>
-          <div class="trade-result-value">{{shortTrade?.entryDate}}</div>
-        </div>
-        <div class="trade-result" *ngIf="shortTrade?.entry_price">
-          <div class="trade-result-title">Open trade price::</div>
-          <div class="trade-result-value">{{shortTrade?.entry_price}}</div>
-        </div>
-        <div class="trade-result" *ngIf="shortTrade?.currency_amount">
-          <div class="trade-result-title">Currency Amount:</div>
-          <div class="trade-result-value">{{shortTrade?.currency_amount}}</div>
-        </div>
-        <div class="trade-result" *ngIf="shortTrade?.exit_date">
-          <div class="trade-result-title">Close trade date:</div>
-          <div class="trade-result-value">{{shortTrade?.exit_date}}</div>
-        </div>
-        <div class="trade-result" *ngIf="shortTrade?.exit_price">
-          <div class="trade-result-title">Close trade price:</div>
-          <div class="trade-result-value">{{shortTrade?.exit_price}}</div>
-        </div>
-        <div class="trade-result" *ngIf="shortTrade?.exit_price - shortTrade?.entry_price">
-          <div class="trade-result-title">Profit:</div>
-          <div class="trade-result-value">{{shortTrade?.exit_price - shortTrade?.entry_price}}</div>
-        </div>
+    <div class="trade-result-wrapper" *ngIf="tradeResult">
+      <div class="trade-result" *ngIf="tradeResult?.enter_date">
+        <div class="trade-result-title">Open trade date:</div>
+        <div class="trade-result-value">{{tradeResult?.enter_date | date: 'MMM d, y, h:mm:ss a'}}</div>
       </div>
-      <mat-form-field class="example-form-field" appearance="fill">
-        <mat-label>Enter bet</mat-label>
-        <input matInput required type="text" formControlName="enter_bet">
-        <button matSuffix mat-icon-button aria-label="Clear">
-        </button>
-      </mat-form-field>
-      <button type="submit" mat-raised-button
-              color="accent">{{openShortTrade ? 'Close Short Trade' : 'Start Short Trade'}}</button>
+      <div class="trade-result" *ngIf="tradeResult?.exit_date">
+        <div class="trade-result-title">Close trade date:</div>
+        <div class="trade-result-value">{{tradeResult?.exit_date | date: 'MMM d, y, h:mm:ss a'}}</div>
+      </div>
+      <div class="trade-result" *ngIf="tradeResult?.enter_price">
+        <div class="trade-result-title">Open trade price:</div>
+        <div class="trade-result-value">You buy bitcoins on {{tradeResult?.enter_price}} $</div>
+      </div>
+      <div class="trade-result" *ngIf="tradeResult?.enter_value">
+        <div class="trade-result-title">Open bitcoin value</div>
+        <div class="trade-result-value">Bitcoin cost on buy time: {{tradeResult?.enter_value}}</div>
+      </div>
+      <div class="trade-result" *ngIf="tradeResult?.exit_price">
+        <div class="trade-result-title">Close trade price:</div>
+        <div class="trade-result-value">{{tradeResult?.exit_price}} $ per Bitcoin (Loss-stop)</div>
+      </div>
+      <div class="trade-result" *ngIf="tradeResult?.currency_amount">
+        <div class="trade-result-title">Currency Amount:</div>
+        <div class="trade-result-value">You buy {{tradeResult?.currency_amount}} Bitcoin</div>
+      </div>
+      <div class="trade-result" *ngIf="currentValue">
+        <div class="trade-result-title">Current Value:</div>
+        <div class="trade-result-value">{{currentValue}} Bitcoin per {{tradeResult?.enter_price}} $</div>
+      </div>
+      <div class="trade-result" *ngIf="currentValue && tradeResult?.currency_amount ">
+        <div class="trade-result-title">Profit:</div>
+        <div class="trade-result-value">{{profit}} Bitcoin</div>
+      </div>
     </div>
-  </form>
-  <!----------------------------------------------------------------------------------------------------------->
+      <form (submit)="submit()" [formGroup]="tradeValues">
+        <mat-form-field appearance="fill">
+          <mat-label>Enter a date range</mat-label>
+          <mat-date-range-input [rangePicker]="picker">
+            <input formControlName="enter_date" matStartDate placeholder="Start date">
+            <input formControlName="exit_date" matEndDate placeholder="End date">
+          </mat-date-range-input>
+          <mat-hint>MM/DD/YYYY – MM/DD/YYYY</mat-hint>
+          <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+          <mat-date-range-picker #picker></mat-date-range-picker>
+        </mat-form-field>
+        <mat-form-field class="example-form-field" appearance="fill">
+          <mat-label>Enter price $</mat-label>
+          <input formControlName="enter_price" matInput required type="text">
+          <button matSuffix mat-icon-button aria-label="Clear">
+          </button>
+        </mat-form-field>
+        <mat-form-field class="example-form-field" appearance="fill">
+          <mat-label>Exit price $</mat-label>
+          <input formControlName="exit_price" matInput required type="text">
+          <button matSuffix mat-icon-button aria-label="Clear">
+          </button>
+        </mat-form-field>
+        <button type="submit" mat-raised-button color="accent" *ngIf="isEditable">Open Trade</button>
+        <button type="button" (click)="editValue()" mat-raised-button color="accent" *ngIf="!isEditable">Edit Trade</button>
+        <button type="button" (click)="closeTrade()" mat-raised-button color="accent" *ngIf="!isEditable">Close Trade</button>
+      </form>
+  </div>
 
-  <form (submit)="submitBalanceTrade()" [formGroup]="balanceValue">
-    <div class="trade-info-wrapper">
-      <div class="trade-result-wrapper" *ngIf="longTrade">
-        <div class="trade-result">
-          <div class="trade-result-title">Profit:</div>
-          <div class="trade-result-value">{{ longTrade}}</div>
-        </div>
-      </div>
-      <mat-form-field appearance="fill">
-        <mat-label>Choose a date</mat-label>
-        <input required formControlName="end" matInput [matDatepicker]="picker">
-        <mat-hint>MM/DD/YYYY</mat-hint>
-        <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
-        <mat-datepicker #picker></mat-datepicker>
-      </mat-form-field>
-      <mat-form-field class="example-form-field" appearance="fill">
-        <mat-label>Enter bet</mat-label>
-        <input required matInput type="text" formControlName="enter_balance">
-        <button matSuffix mat-icon-button aria-label="Clear">
-        </button>
-      </mat-form-field>
-      <button type="submit" mat-raised-button
-              color="accent">{{openLongTrade ? 'Close Long Bet' : 'Start Long Bet'}}</button>
-    </div>
-  </form>
-</div>

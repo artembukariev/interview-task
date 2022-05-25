@@ -1,30 +1,36 @@
 .trade-wrapper {
   display: flex;
-  justify-content: space-around;
+  justify-content: center;
+  flex-direction: column;
+  align-items: center;
 
-  .trade-info-wrapper {
+  .trade-result-wrapper {
+    padding: 20px;
+    width: 400px;
+    .trade-result {
+      display: flex;
+      align-items: center;
+
+      .trade-result-title {
+        font-weight: 400;
+        color: #000000;
+      }
+
+      .trade-result-value {
+        font-weight: 900;
+        color: #000000;
+        font-style: italic;
+        margin-left: 8px;
+      }
+    }
+  }
+
+  form {
+    width: 400px;
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
-    padding: 20px;
-
-    .trade-result-wrapper {
-      .trade-result {
-        display: flex;
-        align-items: center;
-
-        .trade-result-title {
-          font-weight: 400;
-          color: #000000;
-        }
-
-        .trade-result-value {
-          font-weight: 900;
-          color: #000000;
-          font-style: italic;
-          margin-left: 8px;
-        }
-      }
+    button {
+      margin: 10px 0;
     }
   }
 }

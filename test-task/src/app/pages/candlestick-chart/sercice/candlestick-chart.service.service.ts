@@ -2,18 +2,21 @@ import {Injectable} from '@angular/core';
 import {Observable, of, Subject} from "rxjs";
 import {concatMap, delay} from "rxjs/operators";
 import {webSocket} from "rxjs/webSocket";
-import {LongTrade, ShortTrade} from "../../trade-info/trade-info.component";
+import {TradeValues} from "../../trade-info/trade-info.component";
 
-export interface TradeExit {
+export interface TradeResult {
   'exit_date': Date,
   'exit_price': number,
+  'enter_price': number,
+  'enter_value': string,
+  'currency_amount': number,
+  'enter_date': Date,
+  'current_value': Subject<number>
+}
+export interface BitcoinRate {
+  'bitcoin': string;
 }
 
-export interface TradeStart {
-  'entry_price': number,
-  'currency_amount': number,
-  'entryDate': Date,
-}
 
 @Injectable({
   providedIn: 'root'
@@ -23,12 +26,7 @@ export class CandlestickChartService {
   subject = webSocket('wss://ws.coincap.io/prices?assets=bitcoin');
   entryDate: Date;
   entryBalance = new Subject<number>();
-  exit_date: Date;
-  exit_price: number;
-  currency_amount: number;
-  tradeInfoStart: TradeStart;
-  tradeInfoExit: TradeExit;
-  data: any;
+  data: BitcoinRate;
   rate: any;
 
   constructor() {
@@ -38,37 +36,35 @@ export class CandlestickChartService {
     this.rate = this.subject.pipe(
       concatMap(item => of(item).pipe(delay(1000)))
     ).subscribe(data => {
-      this.rate = data;
-      this.subject.next(this.rate.bitcoin);
+      this.data = data as BitcoinRate;
+      this.subject.next(this.data.bitcoin);
     })
-    return this.subject as Observable<any>;
+    return this.subject as Observable<string>;
   }
 
-  shortTrade(entryValue: number, tradeStatus: boolean): Observable<ShortTrade> {
-    if (!tradeStatus) {
-      this.tradeInfoExit = {
-        exit_date: new Date(),
-        exit_price: this.rate.bitcoin,
+  result(values: TradeValues): Observable<TradeResult> {
+    this.subject.subscribe((res: any) => {
+      const balance = (((values.enter_price) / +res.bitcoin))
+      this.entryBalance.next(balance);
+      if(values.exit_date === new Date() || +values.exit_price >= +res.bitcoin ){
+        this.entryBalance.complete()
       }
-    } else {
-      this.tradeInfoStart = {
-        entry_price: this.rate.bitcoin,
-        currency_amount: (+entryValue / +this.rate.bitcoin),
-        entryDate: new Date(),
-      }
+    })
+    const result = {
+      enter_date: values.enter_date,
+      exit_date: values.exit_date,
+      enter_price: values.enter_price,
+      exit_price: values.exit_price,
+      currency_amount: (+values?.enter_price / +this.data.bitcoin),
+      current_value: this.entryBalance,
+      enter_value: this.data.bitcoin,
     }
-    return of(tradeStatus ? this.tradeInfoStart : {...this.tradeInfoStart, ...this.tradeInfoExit}) as Observable<any>
+    return of(result) as Observable<TradeResult>
   }
 
-  longTrade(entryValue: any, tradeStatus?: boolean): Observable<LongTrade> {
-    if (!tradeStatus || new Date() === entryValue.end) {
+  closeTrade(isTradeClosed: boolean) {
+    if(isTradeClosed) {
       this.entryBalance.complete()
-    } else {
-      this.subject.subscribe((res: any) => {
-        const balance = (((+entryValue.enter_balance) / +res.bitcoin) + res.bitcoin)
-        this.entryBalance.next(balance);
-      })
     }
-    return this.entryBalance as Observable<any>;
   }
 }

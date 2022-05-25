@@ -8,16 +8,21 @@ import {
   ApexYAxis,
   ApexXAxis,
   ApexTitleSubtitle,
-  ApexTooltip
+  ApexTooltip, ApexPlotOptions, ApexLocale
 } from "ng-apexcharts";
 import {takeUntil} from "rxjs/operators";
 import {Subject} from "rxjs";
 import {CandlestickChartService} from "./sercice/candlestick-chart.service.service";
 
+export interface ChartData {
+  'x': Date,
+  'y': Array<number>,
+}
 
 export type ChartOptions = {
   series: ApexAxisChartSeries;
   chart: ApexChart;
+  plotOptions: ApexPlotOptions,
   xaxis: ApexXAxis;
   yaxis: ApexYAxis;
   title: ApexTitleSubtitle;
@@ -34,21 +39,15 @@ export class CandlestickChartComponent implements OnInit, OnDestroy {
   destroy$: Subject<boolean> = new Subject<boolean>();
   @ViewChild("chart") chart: ChartComponent;
   public chartOptions: Partial<ChartOptions> | any;
-  data: any;
-  values: Array<number> = [] ;
-
-  chartData = [
-    {
-      x: new Date(Date.now()),
-      y: [30367.46,30367.46,30367.46,30367.46]
-    }
-  ]
+  data: string;
+  values: Array<number> = [];
+  chartData: Array<ChartData> = []
 
   constructor(private chartService: CandlestickChartService) {
-    this.initGraph();
+    this.chartUpdate();
   }
 
-  public updateSeries(data: any) {
+  public updateSeries(data: Array<ChartData>) {
     this.chartOptions.series = [{
       data: data
     }];
@@ -63,17 +62,28 @@ export class CandlestickChartComponent implements OnInit, OnDestroy {
         }
       ],
       chart: {
-        height: 500,
+        height: 300,
         type: "candlestick",
         animations: {
           enabled: true,
           includesDynamicAnimations: {
-            speed: 1000
+            speed: 500
+          }
+        }
+      },
+      plotOptions: {
+        candlestick: {
+          colors: {
+            upward: '#3C90EB',
+            downward: '#DF7D46'
+          },
+          wick: {
+            useFillColor: true
           }
         }
       },
       title: {
-        text: "Buy or Cry",
+        text: "Dollar to Bitcoin",
         align: "center"
       },
       tooltip: {
@@ -82,8 +92,6 @@ export class CandlestickChartComponent implements OnInit, OnDestroy {
       xaxis: {
         type: "category",
         borderColor: '#999',
-
-        tickAmount: 2,
         labels: {
           formatter: function (val: Date) {
             return moment(val).format("MMM DD HH:mm:ss");
@@ -91,15 +99,19 @@ export class CandlestickChartComponent implements OnInit, OnDestroy {
         }
       },
       yaxis: {
-        tickAmount: 2,
+        forceNiceScale: true,
         tooltip: {
           enabled: true
         }
-      }
+      },
     };
   }
 
   ngOnInit(): void {
+    this.initGraph();
+  }
+
+  chartUpdate() {
     this.chartService.getChartData().pipe(takeUntil(this.destroy$)).subscribe(res => {
       this.data = res.bitcoin
       if (this.values.length !== 4 && this.data) {
@@ -114,6 +126,7 @@ export class CandlestickChartComponent implements OnInit, OnDestroy {
       this.updateSeries(this.chartData);
     });
   }
+
   ngOnDestroy() {
     this.destroy$.next(true);
     this.destroy$.unsubscribe();
