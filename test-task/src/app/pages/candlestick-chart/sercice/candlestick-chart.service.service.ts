@@ -1,5 +1,5 @@
 import {Injectable} from '@angular/core';
-import {Observable, of, Subject} from "rxjs";
+import {Observable, of, Subject, Subscription} from "rxjs";
 import {concatMap, delay} from "rxjs/operators";
 import {webSocket} from "rxjs/webSocket";
 import {TradeValues} from "../../trade-info/trade-info.component";
@@ -13,6 +13,7 @@ export interface TradeResult {
   'enter_date': Date,
   'current_value': Subject<number>
 }
+
 export interface BitcoinRate {
   'bitcoin': string;
 }
@@ -27,26 +28,28 @@ export class CandlestickChartService {
   entryDate: Date;
   entryBalance = new Subject<number>();
   data: BitcoinRate;
-  rate: any;
+  currentBitcoinValue: BitcoinRate;
+  rate: Subscription;
 
   constructor() {
   }
 
-  getChartData(): Observable<any> {
+  getChartData(): Observable<BitcoinRate> {
     this.rate = this.subject.pipe(
       concatMap(item => of(item).pipe(delay(1000)))
     ).subscribe(data => {
       this.data = data as BitcoinRate;
       this.subject.next(this.data.bitcoin);
     })
-    return this.subject as Observable<string>;
+    return this.subject as Observable<BitcoinRate>;
   }
 
   result(values: TradeValues): Observable<TradeResult> {
-    this.subject.subscribe((res: any) => {
-      const balance = (((values.enter_price) / +res.bitcoin))
+    this.subject.subscribe(res => {
+      this.currentBitcoinValue = res as BitcoinRate
+      const balance = (((values.enter_price) / +this.currentBitcoinValue.bitcoin))
       this.entryBalance.next(balance);
-      if(values.exit_date === new Date() || +values.exit_price >= +res.bitcoin ){
+      if (values.exit_date === new Date() || +values.exit_price >= +this.currentBitcoinValue.bitcoin) {
         this.entryBalance.complete()
       }
     })
@@ -63,7 +66,7 @@ export class CandlestickChartService {
   }
 
   closeTrade(isTradeClosed: boolean) {
-    if(isTradeClosed) {
+    if (isTradeClosed) {
       this.entryBalance.complete()
     }
   }
